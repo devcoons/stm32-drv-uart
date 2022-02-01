@@ -49,8 +49,8 @@
 #if __has_include("FreeRTOS.h")
 	#include "FreeRTOS.h"
 #endif
-#if __has_include("lib_crc_ccitt.h")
-	#include "lib_crc_ccitt.h"
+#if __has_include("lib_crypto.h")
+	#include "lib_crypto.h"
 #endif
 
 /******************************************************************************
