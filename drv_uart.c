@@ -239,7 +239,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			if(current_uart->in_buffer[current_uart->in_buffer_sz-1] == '\r'
 				&& current_uart->in_buffer[current_uart->in_buffer_sz] == '\n')
 			{
-				is_complete = current_uart->in_buffer_sz;
+				is_complete = current_uart->in_buffer_sz+1;
 				current_uart->in_buffer_sz = 0;
 			}
 			else
@@ -268,7 +268,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			callback_item = current_uart->callbacks;
 			while(callback_item!=NULL)
 			{
+#ifdef LIB_CRYPTO_ENABLE_CRC
 				callback_item->callback(&current_uart->in_buffer[2], is_complete-UART_MSG_MIN_CHAR);
+#else
+				callback_item->callback(&current_uart->in_buffer[0], is_complete-UART_MSG_MIN_CHAR);
+#endif
+
 				callback_item = callback_item->next;
 			}
 		}
