@@ -40,17 +40,25 @@ UART driver reusable on different hardwares.
 	- `interface. tx_port` : port used for the low pulse.
 	- `interface. tx_pin` : pin used for the low pulse.
 	- `interface. in_buffer` : address of 8-bit array for reception/transmission buffer 
-	- `interface. in_buffer_sz` : 
-	- `interface. in_buffer_tsz` :
-	- `interface. parse_as_protocol` : 
+	- `interface. in_buffer_sz` : position in the buffer
+	- `interface. in_buffer_tsz` : buffer size
+	- `interface. parse_as_protocol` : [?]
 	- `interface.raw_timout ` : we assume the message ends after the timeout.
 	- `interface.max_raw_timout ` : maximum timeout for a raw message
 	
-- Use the ```uart_send_message``` function to send a message
-- Use a callback function to read a message
+- Use the ```uart_send_message``` function to send a message:
+	```C
+	uart_send_message(&uart_instance, message, b64_sz);
+	```
+- Messages are read thought the callback function. To add a callback function use ```uart_callback_add```:
+	```C
+	uart_callback_add(&uart_instance, cb_uart);
+	```
 
 
 ## Example
+
+Let's consider a NUCLEO-H7A3ZI-Q. UART4 has been enabled in the .ioc file
 
 ```C
 
@@ -66,7 +74,7 @@ uart_t uart_instance_ = {
 
 uart_initialize(&uart_instance);
 
-uart_send_message(&uart_instance, can_base64_dt, b64_sz);
+uart_send_message(&uart_instance, message, b64_sz);
 
 uint8_t can_base64_dt[32];
 
