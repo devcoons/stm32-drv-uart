@@ -75,7 +75,7 @@ uart_initialize(&uart_instance);
 
 uart_send_message(&uart_instance, message, b64_sz);
 
-uint8_t can_base64_dt[32];
+uint8_t message[32];
 
 uart_callback_add(&uart_instance, cb_uart);
 
