@@ -37,12 +37,11 @@ UART driver reusable on different hardwares.
 				iqueue_enqueue(&q_uart, &dec_frame);
 		} 
 		  
-	- `interface. tx_port` : port used for the low pulse.
-	- `interface. tx_pin` : pin used for the low pulse.
-	- `interface. in_buffer` : address of 8-bit array for reception/transmission buffer 
-	- `interface. in_buffer_sz` : position in the buffer
-	- `interface. in_buffer_tsz` : buffer size
-	- `interface. parse_as_protocol` : [?]
+	- `interface. tx_port` : port used for the low pulse (define only if needed).
+	- `interface. tx_pin` : pin used for the low pulse (define only if needed).
+	- `interface. in_buffer` : address of 8-bit array for reception/transmission buffer.
+	- `interface. in_buffer_sz` : position in the buffer.
+	- `interface. in_buffer_tsz` : buffer size.
 	- `interface.raw_timout ` : we assume the message ends after the timeout.
 	- `interface.max_raw_timout ` : maximum timeout for a raw message
 	
