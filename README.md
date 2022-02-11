@@ -35,8 +35,8 @@ UART driver reusable on different hardwares.
 				base64_decode(buffer, size, ser_dt);
 					
 				iqueue_enqueue(&q_uart, &dec_frame);
-		} 
-		  
+			} 
+		 
 	- `interface. tx_port` : port used for the low pulse (define only if needed).
 	- `interface. tx_pin` : pin used for the low pulse (define only if needed).
 	- `interface. in_buffer` : address of 8-bit array for reception/transmission buffer.
