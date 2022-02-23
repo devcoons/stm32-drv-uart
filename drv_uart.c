@@ -35,11 +35,13 @@
 
 #include "drv_uart.h"
 
+#ifdef DRV_UART_ENABLED
 /******************************************************************************
 * Preprocessor Post-Definitions & Macros
 ******************************************************************************/
 
-#ifdef BASE_LIB_CRC_CCITT_H_
+
+#ifdef LIB_CRYPTO_ENABLE_CRC
 #define UART_MSG_MIN_CHAR 4
 #else
 #define UART_MSG_MIN_CHAR 2
@@ -49,7 +51,7 @@
 * Enumerations, structures & Variables
 ******************************************************************************/
 
-#ifdef HAL_TIM_MODULE_ENABLED
+#ifdef UART_TIMER
 	static uint8_t is_timer_initialized = 0;
 #endif
 
@@ -64,7 +66,7 @@ static uint32_t uart_interfaces_cnt = 0;
 * Definition  | Static Functions
 ******************************************************************************/
 
-#ifdef HAL_TIM_MODULE_ENABLED
+#ifdef DRV_UART_TIMER
 
 static void MX_UART_TIM_Init(void)
 {
@@ -110,7 +112,7 @@ static void MX_UART_TIM_Init(void)
 
 i_status uart_initialize(uart_t* uart)
 {
-	#ifdef HAL_TIM_MODULE_ENABLED
+	#ifdef DRV_UART_TIMER
 	if(is_timer_initialized == 0)
 	{
 		MX_UART_TIM_Init();
@@ -121,6 +123,9 @@ i_status uart_initialize(uart_t* uart)
 	uart->in_buffer_sz = 0;
 	memset(uart->in_buffer,0,uart->in_buffer_tsz);
 
+	#ifndef DRV_UART_TIMER
+		uart->parse_as_protocol = 1;
+	#endif
 	uart->mx_init();
 
 	for(register uint32_t i=0;i<uart_interfaces_cnt;i++)
@@ -142,16 +147,21 @@ i_status uart_initialize(uart_t* uart)
 
 i_status uart_send(uart_t* uart, uint8_t *buffer, uint32_t size)
 {
+#ifdef DRV_UART_TIMER
 	if(uart->send_custom_low !=0)
 		return I_INPROGRESS;
+#endif
 	return HAL_UART_Transmit(uart->huart, buffer, size,100) == HAL_OK ? I_OK : I_ERROR;
 }
 
 i_status uart_send_message(uart_t* uart, uint8_t *buffer, uint32_t size)
 {
+#ifdef DRV_UART_TIMER
 	if(uart->send_custom_low !=0)
 		return I_INPROGRESS;
-#ifdef BASE_LIB_CRC_CCITT_H_
+#endif
+
+#ifdef LIB_CRYPTO_ENABLE_CRC
 	uint16_t calc_crc = crc16_ccitt(0xFFFF, buffer, size);
 	uint8_t crc[2];
 	crc[0] = (calc_crc & 0xFF00) >> 8;
@@ -191,6 +201,7 @@ i_status uart_callback_add(uart_t* uart, void(*cb)(uint8_t *buffer, uint32_t siz
 	return I_NOTIMPLEMENTED;
 }
 
+#ifdef DRV_UART_TIMER
 i_status uart_send_lowpulse(uart_t* uart, uint32_t microseconds)
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -206,6 +217,7 @@ i_status uart_send_lowpulse(uart_t* uart, uint32_t microseconds)
 	__DSB();
 	return I_OK;
 }
+#endif
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -227,7 +239,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			if(current_uart->in_buffer[current_uart->in_buffer_sz-1] == '\r'
 				&& current_uart->in_buffer[current_uart->in_buffer_sz] == '\n')
 			{
-				is_complete = current_uart->in_buffer_sz;
+				is_complete = current_uart->in_buffer_sz+1;
 				current_uart->in_buffer_sz = 0;
 			}
 			else
@@ -246,7 +258,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 		if(current_uart->callbacks != NULL && is_complete >= UART_MSG_MIN_CHAR)
 		{
-#ifdef BASE_LIB_CRC_CCITT_H_
+#ifdef LIB_CRYPTO_ENABLE_CRC
 			uint16_t crc = 0 + (current_uart->in_buffer[0] << 8 | current_uart->in_buffer[1]);
 			uint16_t calc_crc = crc16_ccitt(0xFFFF, &current_uart->in_buffer[2], is_complete-3);
 
@@ -256,20 +268,29 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			callback_item = current_uart->callbacks;
 			while(callback_item!=NULL)
 			{
+#ifdef LIB_CRYPTO_ENABLE_CRC
 				callback_item->callback(&current_uart->in_buffer[2], is_complete-UART_MSG_MIN_CHAR);
+#else
+				callback_item->callback(&current_uart->in_buffer[0], is_complete-UART_MSG_MIN_CHAR);
+#endif
+
 				callback_item = callback_item->next;
 			}
 		}
 	}
 	else
 	{
+#ifdef DRV_UART_TIMER
 		current_uart->raw_timout = current_uart->max_raw_timout;
+#endif
 		current_uart->in_buffer_sz = current_uart->in_buffer_sz < current_uart->in_buffer_tsz ? current_uart->in_buffer_sz + 1 : 0;
 		HAL_UART_Receive_IT(current_uart->huart,&current_uart->in_buffer[current_uart->in_buffer_sz],1);
+#ifdef DRV_UART_TIMER
 		current_uart->raw_timout = current_uart->max_raw_timout;
+#endif
 	}
 }
-#ifdef HAL_TIM_MODULE_ENABLED
+#ifdef DRV_UART_TIMER
 void uart_tim_complete_cb(TIM_HandleTypeDef *htim)
 {
 	if (htim->Instance != UART_TIMER)
@@ -319,6 +340,7 @@ void uart_tim_complete_cb(TIM_HandleTypeDef *htim)
 		}
 	}
 }
+#endif
 #endif
 /******************************************************************************
 * EOF - NO CODE AFTER THIS LINE

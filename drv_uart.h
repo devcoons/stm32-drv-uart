@@ -32,8 +32,7 @@
 #ifndef DRIVERS_INC_DRV_UART_H_
 #define DRIVERS_INC_DRV_UART_H_
 
-#define UART_TIMER TIM15
-#define UART_TIMER_HANDLER htim15
+
 
 /******************************************************************************
 * Includes
@@ -42,10 +41,40 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include "usart.h"
-#if __has_include("tim.h")
-	#include "tim.h"
+
+#if __has_include("../drv_uart_config.h")
+	#include "../drv_uart_config.h"
+	#define DRV_UART_CONFIG_PRESENT
+#else
+	#warning "Missing: `drv_uart_config.h` file in the parent folder. The library is disabled"
 #endif
+
+
+#ifdef DRV_UART_CONFIG_PRESENT
+#if __has_include("usart.h")
+	#include "usart.h"
+	#define DRV_UART_HAL_H_PRESENT
+#else
+	#error "Missing: `usart.h` file. Cannot use this library"
+#endif
+#endif
+
+#ifdef DRV_UART_HAL_H_PRESENT
+	#if defined(DRV_UART_TIMER) && defined(DRV_UART_TIMER_HANDLER)
+		#if __has_include("tim.h")
+			#include "tim.h"
+			#define DRV_UART_ENABLED
+		#else
+			#undef DRV_UART_ENABLED
+			#error "Missing: `tim.h` file. Cannot use this library as raw with timouts"
+		#endif
+	#else
+		#define DRV_UART_ENABLED
+	#endif
+#endif
+
+#ifdef DRV_UART_ENABLED
+
 #if __has_include("FreeRTOS.h")
 	#include "FreeRTOS.h"
 #endif
@@ -64,11 +93,11 @@ typedef enum
 	I_OK 			= 0x00,
 	I_INVALID 		= 0x01,
 	I_EXISTS 		= 0x02,
-	I_NOTEXISTS 		= 0x03,
+	I_NOTEXISTS 	= 0x03,
 	I_FAILED 		= 0x04,
 	I_EXPIRED 		= 0x05,
 	I_UNKNOWN 		= 0x06,
-	I_INPROGRESS 		= 0x07,
+	I_INPROGRESS 	= 0x07,
 	I_IDLE			= 0x08,
 	I_FULL			= 0x09,
 	I_EMPTY			= 0x0A,
@@ -112,13 +141,15 @@ typedef struct
 	uart_callback_t * callbacks;
 	GPIO_TypeDef * tx_port;
 	uint16_t tx_pin;
-	uint16_t send_custom_low;
 	uint8_t parse_as_protocol;
 	uint8_t* in_buffer;
 	uint32_t in_buffer_sz;
 	uint32_t in_buffer_tsz;
+#ifdef DRV_UART_TIMER
+	uint16_t send_custom_low;
 	uint8_t raw_timout;
 	uint8_t max_raw_timout;
+#endif
 }uart_t;
 
 /******************************************************************************
@@ -128,13 +159,16 @@ typedef struct
 i_status uart_initialize(uart_t* uart);
 i_status uart_send(uart_t* uart, uint8_t *buffer, uint32_t size);
 i_status uart_send_message(uart_t* uart, uint8_t *buffer, uint32_t size);
+#ifdef DRV_UART_TIMER
 i_status uart_send_lowpulse(uart_t* uart, uint32_t microseconds);
+#endif
 i_status uart_callback_add(uart_t* canbus, void(*cb)(uint8_t *buffer, uint32_t size));
 
-#ifdef HAL_TIM_MODULE_ENABLED
+#ifdef DRV_UART_TIMER
 void uart_tim_complete_cb(TIM_HandleTypeDef *htim);
 #endif
 /******************************************************************************
 * EOF - NO CODE AFTER THIS LINE
 ******************************************************************************/
+#endif
 #endif
