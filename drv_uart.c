@@ -260,7 +260,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		{
 #ifdef LIB_CRYPTO_ENABLE_CRC
 			uint16_t crc = 0 + (current_uart->in_buffer[0] << 8 | current_uart->in_buffer[1]);
-			uint16_t calc_crc = crc16_ccitt(0xFFFF, &current_uart->in_buffer[2], is_complete-3);
+			uint16_t calc_crc = crc16_ccitt(0xFFFF, &current_uart->in_buffer[2], is_complete-4);
 
 			if(crc!=calc_crc)
 				return;
