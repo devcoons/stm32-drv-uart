@@ -4,9 +4,7 @@ UART driver reusable on different hardwares.
 
 ## Supported Hardware
 
-- [supported]
-- [supported]
-- [supported]
+- NUCLEO-H745ZI-Q
 
 ### Functions Guide
 
