@@ -47,9 +47,9 @@ static void cb_uart(uint8_t *buffer, uint32_t size)
 } 
 
 ```
-	```C
-	uart_callback_add(&uart_instance, cb_uart);
-	```
+```C
+  uart_callback_add(&uart_instance, cb_uart);
+```
 
 
 ## Example
