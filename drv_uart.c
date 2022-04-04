@@ -40,7 +40,6 @@
 * Preprocessor Post-Definitions & Macros
 ******************************************************************************/
 
-
 #ifdef LIB_CRYPTO_ENABLE_CRC
 #define UART_MSG_MIN_CHAR 4
 #else
@@ -51,7 +50,7 @@
 * Enumerations, structures & Variables
 ******************************************************************************/
 
-#ifdef UART_TIMER
+#ifdef DRV_UART_TIMER
 	static uint8_t is_timer_initialized = 0;
 #endif
 
@@ -70,39 +69,39 @@ static uint32_t uart_interfaces_cnt = 0;
 
 static void MX_UART_TIM_Init(void)
 {
-	if(HAL_TIM_Base_GetState(&UART_TIMER_HANDLER) != HAL_TIM_STATE_RESET)
+	if(HAL_TIM_Base_GetState(&DRV_UART_TIMER_HANDLER) != HAL_TIM_STATE_RESET)
 		return;
 
 	TIM_ClockConfigTypeDef sClockSourceConfig = {0};
 	TIM_MasterConfigTypeDef sMasterConfig = {0};
 
-	UART_TIMER_HANDLER.Instance = UART_TIMER;
-	UART_TIMER_HANDLER.Init.Prescaler = (HAL_RCC_GetPCLK2Freq()/10000000) - 1;
-	UART_TIMER_HANDLER.Init.CounterMode = TIM_COUNTERMODE_UP;
-	UART_TIMER_HANDLER.Init.Period = 199;
-	UART_TIMER_HANDLER.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-	UART_TIMER_HANDLER.Init.RepetitionCounter = 0;
-	UART_TIMER_HANDLER.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+	DRV_UART_TIMER_HANDLER.Instance = DRV_UART_TIMER;
+	DRV_UART_TIMER_HANDLER.Init.Prescaler = (HAL_RCC_GetPCLK2Freq()/10000000) - 1;
+	DRV_UART_TIMER_HANDLER.Init.CounterMode = TIM_COUNTERMODE_UP;
+	DRV_UART_TIMER_HANDLER.Init.Period = 199;
+	DRV_UART_TIMER_HANDLER.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	DRV_UART_TIMER_HANDLER.Init.RepetitionCounter = 0;
+	DRV_UART_TIMER_HANDLER.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
 
-	if (HAL_TIM_Base_Init(&UART_TIMER_HANDLER) != HAL_OK)
+	if (HAL_TIM_Base_Init(&DRV_UART_TIMER_HANDLER) != HAL_OK)
 	{
 		Error_Handler();
   	}
 	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
 
-	if (HAL_TIM_ConfigClockSource(&UART_TIMER_HANDLER, &sClockSourceConfig) != HAL_OK)
+	if (HAL_TIM_ConfigClockSource(&DRV_UART_TIMER_HANDLER, &sClockSourceConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&UART_TIMER_HANDLER, &sMasterConfig) != HAL_OK)
+	if (HAL_TIMEx_MasterConfigSynchronization(&DRV_UART_TIMER_HANDLER, &sMasterConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
-	HAL_TIM_Base_Start_IT(&UART_TIMER_HANDLER);
+	HAL_TIM_Base_Start_IT(&DRV_UART_TIMER_HANDLER);
 }
 #endif
 
@@ -293,7 +292,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 #ifdef DRV_UART_TIMER
 void uart_tim_complete_cb(TIM_HandleTypeDef *htim)
 {
-	if (htim->Instance != UART_TIMER)
+	if (htim->Instance != DRV_UART_TIMER)
 		return;
 
 	static uart_t* current_uart = NULL;
