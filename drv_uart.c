@@ -61,6 +61,12 @@ static uint32_t uart_interfaces_cnt = 0;
 * Declaration | Static Functions
 ******************************************************************************/
 
+#ifdef DRV_UART_TIMER
+static void uart_set_pin_as_output(GPIO_TypeDef *gpio, int pin);
+static void uart_set_pin_as_input(GPIO_TypeDef *gpio, int pin);
+static void uart_set_pin_as_alternative(GPIO_TypeDef *gpio, int pin);
+#endif
+
 /******************************************************************************
 * Definition  | Static Functions
 ******************************************************************************/
@@ -78,7 +84,7 @@ static void MX_UART_TIM_Init(void)
 	DRV_UART_TIMER_HANDLER.Instance = DRV_UART_TIMER;
 	DRV_UART_TIMER_HANDLER.Init.Prescaler = (HAL_RCC_GetPCLK2Freq()/10000000) - 1;
 	DRV_UART_TIMER_HANDLER.Init.CounterMode = TIM_COUNTERMODE_UP;
-	DRV_UART_TIMER_HANDLER.Init.Period = 199;
+	DRV_UART_TIMER_HANDLER.Init.Period = 99;
 	DRV_UART_TIMER_HANDLER.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	DRV_UART_TIMER_HANDLER.Init.RepetitionCounter = 0;
 	DRV_UART_TIMER_HANDLER.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -103,6 +109,83 @@ static void MX_UART_TIM_Init(void)
 
 	HAL_TIM_Base_Start_IT(&DRV_UART_TIMER_HANDLER);
 }
+
+uint16_t uart_stm_pin_to_pos(int pin)
+{
+	switch(pin)
+	{
+	case GPIO_PIN_0:
+		return 0;
+	case GPIO_PIN_1:
+		return 1;
+	case GPIO_PIN_2:
+		return 2;
+	case GPIO_PIN_3:
+		return 3;
+	case GPIO_PIN_4:
+		return 4;
+	case GPIO_PIN_5:
+		return 5;
+	case GPIO_PIN_6:
+		return 6;
+	case GPIO_PIN_7:
+		return 7;
+	case GPIO_PIN_8:
+		return 8;
+	case GPIO_PIN_9:
+		return 9;
+	case GPIO_PIN_10:
+		return 10;
+	case GPIO_PIN_11:
+		return 11;
+	case GPIO_PIN_12:
+		return 12;
+	case GPIO_PIN_13:
+		return 13;
+	case GPIO_PIN_14:
+		return 14;
+	case GPIO_PIN_15:
+		return 15;
+	default:
+		break;
+	}
+
+	return 0xFFFF;
+}
+
+
+
+static void uart_set_pin_as_output(GPIO_TypeDef *gpio, int pin)
+{
+	uint16_t ppos = uart_stm_pin_to_pos(pin);
+    uint32_t reg = gpio->MODER;
+    reg &= ~(0b11 << (ppos * 2));
+    reg |= (0b01 & 0b11) << (ppos * 2);
+    gpio->ODR = gpio->ODR | (1<<ppos);
+    gpio->MODER = reg;
+    gpio->ODR = gpio->ODR | (1<<ppos);
+}
+
+static void uart_set_pin_as_input(GPIO_TypeDef *gpio, int pin)
+{
+	uint16_t ppos = uart_stm_pin_to_pos(pin);
+    uint32_t reg = gpio->MODER;
+
+    reg &= ~(0b11 << (ppos * 2));
+    reg |= (0b00 & 0b11) << (ppos * 2);
+    gpio->MODER = reg;
+}
+
+static void uart_set_pin_as_alternative(GPIO_TypeDef *gpio, int pin)
+{
+	uint16_t ppos = uart_stm_pin_to_pos(pin);
+    uint32_t reg = gpio->MODER;
+
+    reg &= ~(0b11 << (ppos * 2));
+    reg |= (0b10 & 0b11) << (ppos * 2);
+    gpio->MODER = reg;
+}
+
 #endif
 
 /******************************************************************************
@@ -138,7 +221,6 @@ i_status uart_initialize(uart_t* uart)
 	uart_interfaces[uart_interfaces_cnt] = uart;
 	uart_interfaces_cnt++;
 
-	HAL_UART_Transmit(uart->huart, (uint8_t*)"\r\n", 2,100);
 	HAL_UART_Receive_IT(uart->huart,&uart->in_buffer[uart->in_buffer_sz],1);
 
 	return I_OK;
@@ -201,21 +283,19 @@ i_status uart_callback_add(uart_t* uart, void(*cb)(uint8_t *buffer, uint32_t siz
 }
 
 #ifdef DRV_UART_TIMER
+
 i_status uart_send_lowpulse(uart_t* uart, uint32_t microseconds)
 {
-	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	uart_set_pin_as_output(uart->tx_port,uart->tx_pin);
 
-	GPIO_InitStruct.Pin = uart->tx_pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-	HAL_GPIO_WritePin(uart->tx_port, uart->tx_pin, GPIO_PIN_SET);
-	HAL_UART_DeInit(uart->huart);
-	HAL_GPIO_Init(uart->tx_port, &GPIO_InitStruct);
-	uart->send_custom_low =1 + (microseconds / 10);
+
+		uart->send_custom_low = 1 + (microseconds)/5;
+
 	__ISB();
 	__DSB();
 	return I_OK;
 }
+
 #endif
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
@@ -299,7 +379,7 @@ void uart_tim_complete_cb(TIM_HandleTypeDef *htim)
 	static uart_callback_t* callback_item = NULL;
 	for(register uint32_t i=0;i<uart_interfaces_cnt;i++)
 	{
-		if(uart_interfaces[i] != NULL)
+		if(uart_interfaces[i] != NULL && DRV_UART_TIMER_HANDLER.Init.Period >= 199)
 		{
 			if(uart_interfaces[i]->parse_as_protocol == 0 && uart_interfaces[i]->in_buffer_sz != 0)
 			{
@@ -333,14 +413,18 @@ void uart_tim_complete_cb(TIM_HandleTypeDef *htim)
 				if(uart_interfaces[i]->send_custom_low == 0)
 				{
 					HAL_GPIO_WritePin(uart_interfaces[i]->tx_port, uart_interfaces[i]->tx_pin, GPIO_PIN_SET);
-					uart_initialize(uart_interfaces[i]);
+					uart_interfaces[i]->in_buffer_sz = 0;
+					uart_set_pin_as_alternative(uart_interfaces[i]->tx_port, uart_interfaces[i]->tx_pin);
+					HAL_UART_Receive_IT(uart_interfaces[i]->huart,uart_interfaces[i]->in_buffer,1);
 				}
 			}
 		}
 	}
 }
 #endif
-#endif
+
 /******************************************************************************
 * EOF - NO CODE AFTER THIS LINE
 ******************************************************************************/
+
+#endif
