@@ -84,7 +84,7 @@ static void MX_UART_TIM_Init(void)
 	DRV_UART_TIMER_HANDLER.Instance = DRV_UART_TIMER;
 	DRV_UART_TIMER_HANDLER.Init.Prescaler = (HAL_RCC_GetPCLK2Freq()/10000000) - 1;
 	DRV_UART_TIMER_HANDLER.Init.CounterMode = TIM_COUNTERMODE_UP;
-	DRV_UART_TIMER_HANDLER.Init.Period = 99;
+	DRV_UART_TIMER_HANDLER.Init.Period = 1999;
 	DRV_UART_TIMER_HANDLER.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	DRV_UART_TIMER_HANDLER.Init.RepetitionCounter = 0;
 	DRV_UART_TIMER_HANDLER.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -288,7 +288,7 @@ i_status uart_send_lowpulse(uart_t* uart, uint32_t microseconds)
 {
 	uart_set_pin_as_output(uart->tx_port,uart->tx_pin);
 
-
+	DRV_UART_TIMER_HANDLER.Instance->ARR = 99;
 		uart->send_custom_low = 1 + (microseconds)/5;
 
 	__ISB();
@@ -379,7 +379,7 @@ void uart_tim_complete_cb(TIM_HandleTypeDef *htim)
 	static uart_callback_t* callback_item = NULL;
 	for(register uint32_t i=0;i<uart_interfaces_cnt;i++)
 	{
-		if(uart_interfaces[i] != NULL && DRV_UART_TIMER_HANDLER.Init.Period >= 199)
+		if(uart_interfaces[i] != NULL && DRV_UART_TIMER_HANDLER.Instance->ARR >= 199)
 		{
 			if(uart_interfaces[i]->parse_as_protocol == 0 && uart_interfaces[i]->in_buffer_sz != 0)
 			{
@@ -412,6 +412,7 @@ void uart_tim_complete_cb(TIM_HandleTypeDef *htim)
 				uart_interfaces[i]->send_custom_low--;
 				if(uart_interfaces[i]->send_custom_low == 0)
 				{
+					DRV_UART_TIMER_HANDLER.Instance->ARR = 1999;
 					HAL_GPIO_WritePin(uart_interfaces[i]->tx_port, uart_interfaces[i]->tx_pin, GPIO_PIN_SET);
 					uart_interfaces[i]->in_buffer_sz = 0;
 					uart_set_pin_as_alternative(uart_interfaces[i]->tx_port, uart_interfaces[i]->tx_pin);
