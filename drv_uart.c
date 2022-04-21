@@ -255,7 +255,7 @@ i_status uart_send_message(uart_t* uart, uint8_t *buffer, uint32_t size)
 	return I_OK;
 }
 
-i_status uart_callback_add(uart_t* uart, void(*cb)(uint8_t *buffer, uint32_t size))
+i_status uart_callback_add(uart_t* uart, void(*cb)(UART_HandleTypeDef *huart, uint8_t *buffer, uint32_t size))
 {
 	__disable_irq();
 
@@ -348,9 +348,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			while(callback_item!=NULL)
 			{
 #ifdef LIB_CRYPTO_ENABLE_CRC
-				callback_item->callback(&current_uart->in_buffer[2], is_complete-UART_MSG_MIN_CHAR);
+				callback_item->callback(huart, &current_uart->in_buffer[2], is_complete-UART_MSG_MIN_CHAR);
 #else
-				callback_item->callback(&current_uart->in_buffer[0], is_complete-UART_MSG_MIN_CHAR);
+				callback_item->callback(huart, &current_uart->in_buffer[0], is_complete-UART_MSG_MIN_CHAR);
 #endif
 
 				callback_item = callback_item->next;
@@ -393,7 +393,7 @@ void uart_tim_complete_cb(TIM_HandleTypeDef *htim)
 					callback_item = current_uart->callbacks;
 					while(callback_item!=NULL)
 					{
-						callback_item->callback(current_uart->in_buffer, current_uart->in_buffer_sz);
+						callback_item->callback(current_uart->huart, current_uart->in_buffer, current_uart->in_buffer_sz);
 						callback_item = callback_item->next;
 					}
 					current_uart->in_buffer_sz = 0;
@@ -427,5 +427,4 @@ void uart_tim_complete_cb(TIM_HandleTypeDef *htim)
 /******************************************************************************
 * EOF - NO CODE AFTER THIS LINE
 ******************************************************************************/
-
 #endif

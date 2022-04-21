@@ -37,7 +37,7 @@ UART driver reusable on different hardwares.
 - Messages are read thought the callback function. To add a callback function use ```uart_callback_add```.
 - An example of callback function:
 ```C
-static void cb_uart(uint8_t *buffer, uint32_t size)
+static void cb_uart(UART_HandleTypeDef *huart, uint8_t *buffer, uint32_t size)
 {
    string message_base64;
    uint8_t ser_dt[13];

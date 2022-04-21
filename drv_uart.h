@@ -32,8 +32,6 @@
 #ifndef DRIVERS_INC_DRV_UART_H_
 #define DRIVERS_INC_DRV_UART_H_
 
-
-
 /******************************************************************************
 * Includes
 ******************************************************************************/
@@ -128,7 +126,7 @@ typedef enum
 
 struct uart_callback
 {
-	void (*callback)(uint8_t *buffer, uint32_t size);
+	void (*callback)(UART_HandleTypeDef *huart, uint8_t *buffer, uint32_t size);
 	struct uart_callback *next;
 };
 
@@ -159,14 +157,14 @@ typedef struct
 i_status uart_initialize(uart_t* uart);
 i_status uart_send(uart_t* uart, uint8_t *buffer, uint32_t size);
 i_status uart_send_message(uart_t* uart, uint8_t *buffer, uint32_t size);
-#ifdef DRV_UART_TIMER
-i_status uart_send_lowpulse(uart_t* uart, uint32_t microseconds);
-#endif
-i_status uart_callback_add(uart_t* canbus, void(*cb)(uint8_t *buffer, uint32_t size));
 
 #ifdef DRV_UART_TIMER
-void uart_tim_complete_cb(TIM_HandleTypeDef *htim);
+	i_status uart_send_lowpulse(uart_t* uart, uint32_t microseconds);
+	void uart_tim_complete_cb(TIM_HandleTypeDef *htim);
 #endif
+
+i_status uart_callback_add(uart_t* huart, void(*cb)(UART_HandleTypeDef *huart, uint8_t *buffer, uint32_t size));
+
 /******************************************************************************
 * EOF - NO CODE AFTER THIS LINE
 ******************************************************************************/
