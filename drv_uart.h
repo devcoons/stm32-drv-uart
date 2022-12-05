@@ -5,7 +5,7 @@
 	-----------------------------------------------------------------------
 
 	MIT License
-	Copyright (c) 2021 Io. D
+	Copyright (c) 2019 Ioannis Deligiannis
 
 	Permission is hereby granted, free of charge, to any person obtaining a
 	copy of this software and associated documentation files (the "Software"),
@@ -31,8 +31,6 @@
 
 #ifndef DRIVERS_INC_DRV_UART_H_
 #define DRIVERS_INC_DRV_UART_H_
-
-
 
 /******************************************************************************
 * Includes
@@ -93,17 +91,31 @@ typedef enum
 	I_OK 			= 0x00,
 	I_INVALID 		= 0x01,
 	I_EXISTS 		= 0x02,
-	I_NOTEXISTS 	= 0x03,
+	I_NOTEXISTS 		= 0x03,
 	I_FAILED 		= 0x04,
 	I_EXPIRED 		= 0x05,
 	I_UNKNOWN 		= 0x06,
-	I_INPROGRESS 	= 0x07,
+	I_INPROGRESS 		= 0x07,
 	I_IDLE			= 0x08,
 	I_FULL			= 0x09,
 	I_EMPTY			= 0x0A,
 	I_YES			= 0x0B,
 	I_NO			= 0x0C,
 	I_SKIP			= 0x0D,
+	I_LOCKED 		= 0x0E,
+	I_INACTIVE 		= 0x0F,
+	I_ACTIVE 		= 0x10,
+	I_READY		 	= 0x11,
+	I_WAIT 			= 0x12,
+	I_OVERFLOW 		= 0x13,
+	I_CONTINUE 		= 0x14,
+	I_STOPPED 		= 0x15,
+	I_WARNING 		= 0x16,
+	I_SLEEP 		= 0x17,
+	I_DEEPSLEEP 		= 0x18,
+	I_STANDBY 		= 0x19,
+	I_GRANTED 		= 0x1A,
+	I_DENIED 		= 0x1B,
 	I_DEBUG_01 		= 0xE0,
 	I_DEBUG_02 		= 0xE1,
 	I_DEBUG_03 		= 0xE2,
@@ -120,7 +132,8 @@ typedef enum
 	I_DEBUG_14 		= 0xED,
 	I_DEBUG_15 		= 0xEE,
 	I_DEBUG_16 		= 0xEF,
-	I_MEMUNALIGNED 		= 0xFD,
+	I_MEMALIGNED		= 0xFC,
+	I_MEMUNALIGNED		= 0xFD,
 	I_NOTIMPLEMENTED 	= 0xFE,
 	I_ERROR 		= 0xFF
 }i_status;
@@ -128,7 +141,7 @@ typedef enum
 
 struct uart_callback
 {
-	void (*callback)(uint8_t *buffer, uint32_t size);
+	void (*callback)(UART_HandleTypeDef *huart, uint8_t *buffer, uint32_t size);
 	struct uart_callback *next;
 };
 
@@ -159,14 +172,14 @@ typedef struct
 i_status uart_initialize(uart_t* uart);
 i_status uart_send(uart_t* uart, uint8_t *buffer, uint32_t size);
 i_status uart_send_message(uart_t* uart, uint8_t *buffer, uint32_t size);
-#ifdef DRV_UART_TIMER
-i_status uart_send_lowpulse(uart_t* uart, uint32_t microseconds);
-#endif
-i_status uart_callback_add(uart_t* canbus, void(*cb)(uint8_t *buffer, uint32_t size));
 
 #ifdef DRV_UART_TIMER
-void uart_tim_complete_cb(TIM_HandleTypeDef *htim);
+	i_status uart_send_lowpulse(uart_t* uart, uint32_t microseconds);
+	void uart_tim_complete_cb(TIM_HandleTypeDef *htim);
 #endif
+
+i_status uart_callback_add(uart_t* huart, void(*cb)(UART_HandleTypeDef *huart, uint8_t *buffer, uint32_t size));
+
 /******************************************************************************
 * EOF - NO CODE AFTER THIS LINE
 ******************************************************************************/
